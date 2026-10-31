@@ -1,7 +1,6 @@
 from app.operations import add_task, find_task, mark_task_done, search_tasks, handle_stats
 from app.validators import  normalize_title
 
-
 def format_task(task):
     if task["is_done"] == True:
         return f'[{task["id"]}] {task["title"]} | приоритет: {task["priority"]} | выполнена'

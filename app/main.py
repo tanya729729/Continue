@@ -1,11 +1,6 @@
-from reports.report import make_report
-from app.cli import run
-
-
-
-print(make_report("Weekly"))  # Отчёт: Weekly
-
-
+#from reports.report import make_report
+from app.cli import run, format_task
+from app.storage import encode_tasks, decode_tasks
 
 
 def calculate_study_minutes(durations):
@@ -13,8 +8,6 @@ def calculate_study_minutes(durations):
     for duration in durations:
         total=total+duration
     return total
-
-
 
 def change_level(level):
     level = 8
@@ -86,9 +79,11 @@ def counted_format_task(task):
     return format_task(task)
 
 
+
 def main():
     tasks = []
     run(tasks)
+
 
 if __name__ == '__main__':
     main()
