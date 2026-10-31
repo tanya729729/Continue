@@ -79,7 +79,7 @@ def counted_format_task(task):
     return format_task(task)
 
 
-
+#точка входа в твою программу. Он определяет, что произойдёт при запуске main.py
 def main():
     tasks = []
     run(tasks)
