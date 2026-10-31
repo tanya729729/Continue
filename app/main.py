@@ -78,6 +78,10 @@ def counted_format_task(task):
     calls.append(task['id'])
     return format_task(task)
 
+def make_notifier(channel):
+    def notify(items):
+        print(channel, items)
+    return notify
 
 #точка входа в твою программу. Он определяет, что произойдёт при запуске main.py
 def main():
