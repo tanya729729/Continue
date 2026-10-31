@@ -9,7 +9,8 @@ from app.operations import (
     completion_percent,
     handle_stats,
 )
-
+from reports.report import make_report
+print(make_report("Weekly"))  # Отчёт: Weekly
 
 #функция запрашивает у пользователя номер задачи
 def read_task_id():
