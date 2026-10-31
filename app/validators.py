@@ -72,3 +72,26 @@ def validate_snapshot(data):
         seen_ids.add(task["id"])
 
     return data
+
+# app.validators, если такого helper ещё нет:
+TASK_FIELDS = {"id", "title", "priority", "is_done"}
+
+def validate_task_record(record, location="record"):
+    if not isinstance(record, dict):
+        raise ValueError(f"{location}: ожидается словарь")
+    if set(record) != TASK_FIELDS:
+        raise ValueError(f"{location}: ожидаются ровно {sorted(TASK_FIELDS)}")
+    return record
+
+def validate_tags(tags):
+    if not isinstance(tags, list):
+        raise ValueError('Метки должны быть списком')
+    normalized = []
+    for tag in tags:
+        if not isinstance(tag, str):
+            raise ValueError('Каждая метка должна быть строкой')
+        clean = tag.strip()
+        if not clean:
+            raise ValueError('Метка не может быть пустой')
+        normalized.append(clean)
+    return normalized
