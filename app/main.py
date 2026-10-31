@@ -1,6 +1,33 @@
 #from reports.report import make_report
 from app.cli import run, format_task
 from app.storage import encode_tasks, decode_tasks
+from app.models import Task
+
+
+def expect_value_error(make_task):
+    try:
+        make_task()
+    except ValueError:
+        return
+    raise AssertionError("конструктор принял некорректные данные")
+
+
+invalid_calls = [
+    lambda: Task(True, "Проверить id"),
+    lambda: Task("2", "Проверить id"),
+    lambda: Task(0, "Проверить диапазон"),
+    lambda: Task(2, "Проверить priority", True),
+    lambda: Task(3, "Проверить priority", False),
+    lambda: Task(3, "Проверить диапазон", 0),
+    lambda: Task(3, "Проверить диапазон", 6),
+    lambda: Task(3, "Проверить тип", "3"),
+    lambda: Task(4, ""),
+    lambda: Task(4, "   "),
+    lambda: Task(5, "Проверить статус", 2, "False"),
+]
+
+for make_task in invalid_calls:
+    expect_value_error(make_task)
 
 
 def calculate_study_minutes(durations):
