@@ -1,8 +1,13 @@
 #from reports.report import make_report
 from app.cli import run, format_task
-from app.storage import encode_tasks, decode_tasks
 from app.models import Task
+from pathlib import Path
+from app.storage import load_tasks, save_tasks
+from app.errors import StorageError
 
+
+# Путь к файлу с задачами
+TASKS_FILE = Path(__file__).resolve().parent / "tasks.json"
 
 def expect_value_error(make_task):
     try:
@@ -110,11 +115,22 @@ def make_notifier(channel):
         print(channel, items)
     return notify
 
-#точка входа в твою программу. Он определяет, что произойдёт при запуске main.py
+
+#точка входа в программу. Он определяет, что произойдёт при запуске main.py
 def main():
-    tasks = []
-    run(tasks)
+    try:
+        # Загружаем ранее сохранённые задачи
+        tasks = load_tasks(TASKS_FILE)
+
+        # Запускаем меню приложения
+        run(tasks)
+
+        # Сохраняем изменения после выхода из меню
+        save_tasks(TASKS_FILE)
+
+    except StorageError as error:
+        print(f"Ошибка хранилища: {error}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
