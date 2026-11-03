@@ -116,6 +116,13 @@ def make_notifier(channel):
     return notify
 
 
+DATA_PATH = Path('data') / 'tasks.json'
+
+def build_service(storage=None):
+    if storage is None:
+        storage = JsonStorage(DATA_PATH)
+    return PlannerService(storage)
+
 #точка входа в программу. Он определяет, что произойдёт при запуске main.py
 def main():
     try:
