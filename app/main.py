@@ -4,7 +4,8 @@ from app.models import Task
 from pathlib import Path
 from app.storage import load_tasks, save_tasks
 from app.errors import StorageError
-
+from app.services import PlannerService
+from app.storage import JsonStorage
 
 # Путь к файлу с задачами
 TASKS_FILE = Path(__file__).resolve().parent / "tasks.json"
@@ -133,10 +134,17 @@ def main():
         run(tasks)
 
         # Сохраняем изменения после выхода из меню
-        save_tasks(TASKS_FILE)
+        save_tasks(TASKS_FILE,tasks)
 
     except StorageError as error:
         print(f"Ошибка хранилища: {error}")
+
+""" def main():
+    service = build_service()
+    try:
+        run(service)
+    except StorageError as error:
+        print(f"Ошибка хранилища: {error}") """
 
 
 if __name__ == "__main__":

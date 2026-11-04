@@ -1,3 +1,7 @@
+from app.models import Task
+from app.validators import validate_task_id
+from app.errors import TaskNotFoundError
+
 class PlannerService:
     def __init__(self, storage):
         self.storage = storage
@@ -5,14 +9,18 @@ class PlannerService:
     def list_tasks(self):
         return self.storage.load()
 
-    def get_task(self, task_id):
-        if type(task_id) is not int:
-            raise ValueError('Номер задачи должен быть целым числом')
+    def _get_task(self, tasks, task_id):
         task_id = validate_task_id(task_id)
-        for task in self.storage.load():
+
+        for task in tasks:
             if task.id == task_id:
                 return task
-        raise TaskNotFoundError(f'Задача {task_id} не найдена')
+
+        raise TaskNotFoundError(task_id)
+
+    def get_task(self, task_id):
+        tasks = self.storage.load()
+        return self._get_task(tasks, task_id)
 
     def search_tasks(self, query):
         query = query.strip().lower()

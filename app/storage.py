@@ -5,21 +5,8 @@ from pathlib import Path
 
 from app.errors import StorageError
 from app.validators import validate_snapshot
-from tempfile import TemporaryDirectory
-from app.services import PlannerService
 from app.models import Task
 
-def list_tasks(storage):
-    return storage.load()
-
-
-def mark_task_done(storage, task_id):
-    tasks = storage.load()
-    task = get_task(tasks, task_id)
-    if not task.is_done:
-        task.mark_done()
-        storage.save(tasks)
-    return True
 
 def encode_tasks(tasks):
     return json.dumps(tasks, ensure_ascii=False, indent=2)
@@ -118,16 +105,10 @@ class JsonStorage:
     def save(self, tasks: list[Task]) -> None:
         try:
             records = [task.to_dict() for task in tasks]
-            validate_loaded_tasks(records)
-            text = json.dumps(records, ensure_ascii=False, indent=2)
-        except (ValueError, TypeError) as error:
+        except (AttributeError, TypeError, ValueError) as error:
             raise StorageError("Неверный список задач") from error
 
-        try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            self.path.write_text(text, encoding="utf-8")
-        except OSError as error:
-            raise StorageError("Не удалось сохранить задачи") from error
+        save_tasks(self.path, records)
 
 class MemoryStorage:
     def __init__(self, tasks=None):
@@ -154,8 +135,6 @@ class SaveCounter:
 
 
 
-
-
 class CountingMemoryStorage(MemoryStorage):
     def __init__(self):
         super().__init__()
@@ -166,19 +145,5 @@ class CountingMemoryStorage(MemoryStorage):
         super().save(tasks)
 
 
-memory = CountingMemoryStorage()
-service = PlannerService(memory)
-task = service.add_task("Проверить запись", 2)
-assert memory.saves == 1
-service.list_tasks()
-assert memory.saves == 1
-service.mark_done(task.id)
-assert memory.saves == 2
-service.mark_done(task.id)
-assert memory.saves == 2
 
-with TemporaryDirectory() as folder:
-    path = Path(folder) / "tasks.json"
-    PlannerService(JsonStorage(path)).add_task("Восстановить", 3)
-    reopened = PlannerService(JsonStorage(path))
-    assert reopened.get_task(1).title == "Восстановить"
+
