@@ -35,7 +35,7 @@ def show_menu():
 #запросить данные и добавить новую задачу
 #найти задачу по id и вывести её
 #пометить задачу выполненной
-def run(tasks=None):
+""" def run(tasks=None):
     if tasks is None:
         tasks = []
 
@@ -64,7 +64,26 @@ def run(tasks=None):
         handlers[command](tasks)
 
     return tasks
+ """
+def execute_command(service, command, read=input, write=print):
+    name = command.strip().lower()
+    if name == "exit":
+        write("Работу завершили")  # сохраните прежнее сообщение
+        return False
+    handler = COMMAND_HANDLERS.get(name)  # существующая маршрутизация
+    if handler is None:
+        write("Неизвестная команда")  # прежний текст
+        return True
+    handler(service, read=read, write=write)
+    return True
 
+
+def run(service, read=input, write=print):
+    while True:
+        show_menu(write)  # существующее меню
+        command = read("Команда: ")
+        if not execute_command(service, command, read, write):
+            break
 
 def read_number(raw):
     try:
@@ -159,3 +178,12 @@ def handle_done(tasks):
     else:
         print("Задача не найдена")
 
+answers = ["Купить хлеб", "2"]  
+messages = []
+
+def fake_read(prompt):
+    return answers.pop(0)
+
+continued = execute_command(
+    service, "add", read=fake_read, write=messages.append
+)

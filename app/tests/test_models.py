@@ -238,3 +238,34 @@ def test_task_tags_are_independent():
     assert first.tags == ["pytest"]
     assert second.tags == []
 
+from app.services import PlannerService
+from app.storage import JsonStorage
+
+
+def test_round_trip_restores_tasks(tmp_path):
+    path = tmp_path / "tasks.json"
+    first = PlannerService(JsonStorage(path))
+    created = first.add_task("Учёба: тесты", priority=4, tags=["pytest", "файлы"])
+    other = first.add_task("Проверить схему", priority=2, tags=[])
+    first.mark_done(created.id)
+
+    # Новые объекты получают только общий путь к файлу.
+    second = PlannerService(JsonStorage(path))
+    restored = second.get_task(created.id)
+    restored_other = second.get_task(other.id)
+
+    assert restored.id == created.id
+    assert restored.title == "Учёба: тесты"
+    assert restored.priority == 4
+    assert restored.is_done is True
+    assert restored.tags == ["pytest", "файлы"]
+    assert restored_other.id == other.id
+    assert restored_other.title == "Проверить схему"
+    assert restored_other.is_done is False
+
+    assert [task.id for task in second.list_tasks()] == [created.id, other.id]
+    assert [task.id for task in second.search_tasks("УЧЁБА")] == [created.id]
+    assert second.get_statistics() == {"all": 2, "open": 1, "done": 1}
+
+    later = second.add_task("После восстановления", priority=1)
+    assert later.id == max(created.id, other.id) + 1
