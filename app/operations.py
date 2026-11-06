@@ -47,6 +47,7 @@ def search_tasks(tasks, query):
 
 def build_statistics(tasks):
     total = len(tasks)
+    #суммируем количество выполненных задач
     completed = sum(task["is_done"] for task in tasks)
 
     return {
