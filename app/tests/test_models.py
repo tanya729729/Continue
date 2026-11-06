@@ -8,7 +8,7 @@ from app.services import PlannerService
 def test_task_normalizes_my_title():
     task = Task(1, "  Прочитать главу  ", priority=3)
 
-    assert task.title == "прочитать главу"
+    assert task.title == "Прочитать главу"
     assert task.is_done is False
 
 #проверка мин и макс приоритетов
@@ -51,7 +51,7 @@ def test_failed_rename_keeps_title():
     with pytest.raises(ValueError):
         #попытка переименовать задачу в строку, содержащую только пробелы; метод rename должен бросить ValueError
         task.rename("   ")
-    assert task.title == "old"
+    assert task.title == "Old"
 
 #проверка,что MemoryStorage создаёт собственную копию передаваемого контейнера и не зависит от дальнейших внешних изменений
 def test_init_and_load_copy_the_container():

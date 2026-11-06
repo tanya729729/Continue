@@ -27,6 +27,7 @@ def show_menu(write=print):
     write("search - искать по названию")
     write("stats - показать статистику")
     write("exit - завершить работу")
+    write("delete - удалить задачу")
 
 
 #функция позволяет пользоваться программой, пока пользователь не выберет exit
@@ -79,44 +80,76 @@ def handle_list(service, read=input, write=print):
 
 # Добавляет новую задачу.
 def handle_add(service, read=input, write=print):
-    title = read("Название задачи: ")
-    raw_priority = read("Приоритет от 1 до 5: ")
+    while True:
+        title = read("Название задачи: ")
 
-    try:
-        priority = int(raw_priority)
-        task = service.add_task(title, priority)
-    except ValueError as error:
-        write(f"Ошибка: {error}")
-        return
+        try:
+            from app.validators import validate_title
+            validate_title(title)
+            break
+        except ValueError as error:
+            write(str(error))
 
+    while True:
+        raw_priority = read("Приоритет от 1 до 5: ")
+
+        try:
+            priority = int(raw_priority)
+        except ValueError:
+            write("Введите целое число")
+            continue
+
+        if not 1 <= priority <= 5:
+            write("Приоритет должен быть от 1 до 5")
+            continue
+
+        break
+
+    task = service.add_task(title, priority)
     write(str(task))
 
 
 # Ищет задачи по названию.
 def handle_search(service, read=input, write=print):
-    query = read("Введите название для поиска: ").strip()
+    query = read("Фрагмент названия: ").strip()
 
-    found_tasks = service.search_tasks(query)
-
-    if not found_tasks:
-        write("Задачи не найдены")
+    if not query:
+        write("Введите непустой фрагмент")
         return
 
-    for task in found_tasks:
-        write(str(task))
+    tasks = service.search_tasks(query)
 
+    if not tasks:
+        write("Совпадений не найдено")
+        return
+
+    for task in tasks:
+        write(str(task))
 
 # Находит задачу по ID.
 def handle_find(service, read=input, write=print):
-    raw_id = read("Номер задачи: ")
+    while True:
+        raw_id = read("Номер задачи: ")
 
-    try:
-        task = service.get_task(int(raw_id))
-    except (ValueError, TaskNotFoundError) as error:
-        write(f"Ошибка: {error}")
+        try:
+            task_id = int(raw_id)
+
+            if task_id <= 0:
+                write("Номер должен быть положительным")
+                continue
+
+        except ValueError:
+            write("Введите целое число")
+            continue
+
+        try:
+            task = service.get_task(task_id)
+        except TaskNotFoundError:
+            write("Задача не найдена")
+            return
+
+        write(str(task))
         return
-
-    write(str(task))
 
 
 # Отмечает задачу выполненной.
@@ -129,7 +162,7 @@ def handle_done(service, read=input, write=print):
         write(f"Ошибка: {error}")
         return
 
-    write("Задача выполнена")
+    write(f"Задача {task.id} выполнена")
 
 
 # Показывает статистику задач.
@@ -147,6 +180,19 @@ def handle_stats(service, read=input, write=print):
     write(f"Осталось: {left}")
     write(f"Процент выполнения: {percent}%")
 
+def handle_delete(service, read=input, write=print):
+    raw_id = read("Номер задачи: ")
+
+    try:
+        service.delete_task(int(raw_id))
+    except TaskNotFoundError:
+        write("Задача не найдена")
+        return
+    except ValueError:
+        write("Введите корректный ID задачи")
+        return
+    write("Задача удалена")
+
 COMMAND_HANDLERS = {
     "add": handle_add,
     "list": handle_list,
@@ -154,6 +200,7 @@ COMMAND_HANDLERS = {
     "done": handle_done,
     "search": handle_search,
     "stats": handle_stats,
+    "delete": handle_delete,
 }
 
 def execute_command(service, command, read=input, write=print):

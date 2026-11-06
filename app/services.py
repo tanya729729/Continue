@@ -35,7 +35,7 @@ class PlannerService:
         total = len(tasks)
         return {'all': total, 'open': total - done, 'done': done}
 
-    def add_task(self, title, priority, tags=None):
+    def add_task(self, title, priority=2, tags=None):
         tasks = self.storage.load() # загружает существующие задачи.
         task = Task(id=max((t.id for t in tasks), default=0) + 1, # берёт максимальный текущий идентификатор и увеличивает его на один.
                     title=title, priority=priority, is_done=False, # задаёт название, приоритет и начальный статус «не выполнена».

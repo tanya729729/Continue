@@ -7,18 +7,20 @@ import pytest
 from app.errors import StorageError
 
 
-
 memory = CountingMemoryStorage()
 service = PlannerService(memory)
 task = service.add_task("Проверить запись", 2)
 assert memory.saves == 1
 
-with TemporaryDirectory() as folder:
-    path = Path(folder) / "tasks.json"
-    PlannerService(JsonStorage(path)).add_task("Восстановить", 3)
-    reopened = PlannerService(JsonStorage(path))
-    assert reopened.get_task(1).title == "восстановить"
+def test_storage_persistence(tmp_path):
+    path = tmp_path / "tasks.json"
 
+    service = PlannerService(JsonStorage(path))
+    service.add_task("Восстановить", 3)
+
+    reopened = PlannerService(JsonStorage(path))
+
+    assert reopened.get_task(1).title == "Восстановить"
 
 
 #проверяет загрузку отсутствующего файла

@@ -1,6 +1,8 @@
 from app.cli import execute_command,run
-from app.services import PlannerService,JsonStorage
-from app.storage import MemoryStorage
+from app.services import PlannerService
+from app.storage import MemoryStorage, JsonStorage
+
+
 import pytest
 from app.errors import StorageError
 from pathlib import Path
@@ -246,7 +248,7 @@ def test_default_build_does_not_read_or_write(tmp_path, monkeypatch):
 
 # проверяет, что импорт модуля завершается успешно и не выводит сообщений
 def test_import_does_not_start_cli():
-    project_root = Path(__file__).resolve().parents[1] # определяет корневой каталог проекта относительно файла теста.
+    project_root = Path(__file__).resolve().parents[2] # указывает на корень проекта, из которого доступен импорт app.main
     result = subprocess.run( #запускает отдельный процесс и сохраняет результат в result.
         [sys.executable, "-c", "import app.main"], # запускает текущий интерпретатор Python и импортирует app.main.
         cwd=project_root, #задаёт рабочий каталог процесса.

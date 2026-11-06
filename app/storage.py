@@ -88,7 +88,7 @@ def save_tasks(path, tasks):
 # сохраняет задачи в JSON-файле и восстанавливает их как объекты Task
 class JsonStorage:
     def __init__(self, path: Path) -> None:
-        self.path = path # сохраняет путь в объекте
+        self.path = Path(path)  # сохраняет путь в объекте
 
     def load(self) -> list[Task]:
         try:

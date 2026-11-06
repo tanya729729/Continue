@@ -6,8 +6,7 @@ TASK_FIELDS = REQUIRED_FIELDS
 
 
 def normalize_title(title):
-    return title.strip().lower()
-
+    return title.strip()
 
 def validate_task_id(task_id):
     if type(task_id) is not int:
