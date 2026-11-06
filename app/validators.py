@@ -51,8 +51,9 @@ def validate_tags(tags):
 def validate_task_record(record, location="record"):
     if not isinstance(record, dict):
         raise ValueError(f"{location}: ожидается словарь")
+    #сравнивает множество ключей записи с каждым из двух допустимых множеств.
     if set(record) not in (REQUIRED_FIELDS, ALLOWED_FIELDS):
-        raise ValueError(f"{location}: неверный набор полей")
+        raise ValueError(f"{location}: неверный набор полей") # сообщает об ошибке, если набор ключей не совпал ни с одним из них.
     return record
 
 
@@ -73,11 +74,11 @@ def validate_snapshot(data):
                 raise ValueError("is_done должен быть bool")
             if "tags" in task:
                 tags = validate_tags(task["tags"])
-                if tags != task["tags"]:
+                if tags != task["tags"]: #сравнивает проверенные метки с исходными.
                     raise ValueError("Метки не нормализованы")
-            if task_id in seen_ids:
+            if task_id in seen_ids: #проверяет, встречался ли уже этот идентификатор.
                 raise ValueError(f"Повторяющийся ID: {task_id}")
-            seen_ids.add(task_id)
+            seen_ids.add(task_id) # добавляет идентификатор в множество.
         except ValueError as error:
             raise SnapshotValidationError(f"Ошибка задачи {index}: {error}") from error
     return data

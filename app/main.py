@@ -11,13 +11,14 @@ from app.storage import JsonStorage
 TASKS_FILE = Path(__file__).resolve().parent / "tasks.json"
 
 def expect_value_error(make_task):
-    try:
-        make_task()
-    except ValueError:
-        return
-    raise AssertionError("конструктор принял некорректные данные")
+    try:#начинает блок, в котором ожидается ошибка.
+        make_task() 
+    except ValueError: # перехватывает ValueError, если он возник при вызове.
+        return #завершает проверку: ожидаемая ошибка получена, None — результат по умолчанию 
+    raise AssertionError("конструктор принял некорректные данные") # вызывает AssertionError, если make_task() завершился без ошибки.
 
-
+#lambda — конструкция для создания функции без имени.
+#В этом списке каждая функция принимает ноль аргументов и при вызове создаёт Task с указанными значениями.
 invalid_calls = [
     lambda: Task(True, "Проверить id"),
     lambda: Task("2", "Проверить id"),
@@ -38,8 +39,8 @@ for make_task in invalid_calls:
 
 def calculate_study_minutes(durations):
     total=0
-    for duration in durations:
-        total=total+duration
+    for duration in durations: # перебирает длительности по одной
+        total=total+duration #добавляет текущую длительность к сумме.
     return total
 
 def change_level(level):
@@ -114,14 +115,16 @@ def counted_format_task(task):
 def make_notifier(channel):
     def notify(items):
         print(channel, items)
-    return notify
+    return notify #return notify возвращает саму функцию, не вызывая её,
+#Это замыкание: возвращённая функция сохраняет доступ к channel после завершения make_notifier.
 
 
 DATA_PATH = Path('data') / 'tasks.json'
 
+#функция создаёт сервис PlannerService с переданным хранилищем.
 def build_service(storage=None):
     if storage is None:
-        storage = JsonStorage(DATA_PATH)
+        storage = JsonStorage(DATA_PATH) #создаётся JsonStorage с путём DATA_PATH.
     return PlannerService(storage)
 
 #точка входа в программу. Он определяет, что произойдёт при запуске main.py

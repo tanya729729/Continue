@@ -15,7 +15,6 @@ def show_tasks(tasks):
         print(format_task(task))
 
 
-
 #функция выводит пользователю список доступных команд
 def show_menu():
     print()
@@ -69,40 +68,40 @@ def execute_command(service, command, read=input, write=print):
     name = command.strip().lower()
     if name == "exit":
         write("Работу завершили")  # сохраните прежнее сообщение
-        return False
-    handler = COMMAND_HANDLERS.get(name)  # существующая маршрутизация
+        return False #завершает функцию и возвращает сигнал остановки для вызывающего кода.
+    handler = COMMAND_HANDLERS.get(name)  # существующая маршрутизация, ищет обработчик команды в словаре; если ключа нет, возвращает None.
     if handler is None:
-        write("Неизвестная команда")  # прежний текст
-        return True
+        write("Неизвестная команда")  #  сообщает об ошибке ввода
+        return True #завершает функцию с сигналом продолжения работы
     handler(service, read=read, write=write)
-    return True
+    return True# сообщает вызывающему коду, что работу можно продолж
 
 
 def run(service, read=input, write=print):
-    while True:
+    while True: #запускает бесконечный цикл обработки команд.
         show_menu(write)  # существующее меню
-        command = read("Команда: ")
-        if not execute_command(service, command, read, write):
-            break
+        command = read("Команда: ")#запрашивает команду и сохраняет введённую строку
+        if not execute_command(service, command, read, write): #проверяет, вернула ли обработка False, то есть сигнал завершения.
+            break # выходит из цикла, после чего функция run заканчивается
 
 def read_number(raw):
     try:
         value = int(raw)
     except ValueError:
         print("Нужны цифры")
-    else:
-        print(f"Номер: {value}")
+    else: #выполняется, когда блок try завершился без исключения, либо сверху ошибка либо выводим число
+        print(f"Номер: {value}") #f-строка подставляет значение value вместо выражения в фигурных скобках.
     finally:
         print("Попытка закончена")
 
 def read_int(prompt):
-    while True:
+    while True: # запускает цикл, который повторяется до успешного ввода.
         raw_value = input(prompt)
         try:
             value = int(raw_value)
         except ValueError:
             print("Введите целое число")
-            continue
+            continue # начинает следующую итерацию цикла и повторно запрашивает ввод.
         return value
 
 # функция ввода названия задачи,после нормализации проверяется, осталась ли строка пустой. 
@@ -151,7 +150,7 @@ def handle_add(tasks):
 def handle_search(tasks):
     query = input("Введите название для поиска: ").strip()
 
-    found_tasks = search_tasks(tasks, query)
+    found_tasks = search_tasks(tasks, query)# ищет задачи в tasks по запросу query.
 
     if not found_tasks:
         print("Задачи не найдены")
@@ -181,9 +180,10 @@ def handle_done(tasks):
 answers = ["Купить хлеб", "2"]  
 messages = []
 
-def fake_read(prompt):
-    return answers.pop(0)
+def fake_read(prompt): #функция принимает prompt и возвращает первый элемент answers, одновременно удаляя его из списка
+    return answers.pop(0) #Если answers пуст, pop(0) вызовет IndexError.
 
 continued = execute_command(
     service, "add", read=fake_read, write=messages.append
 )
+

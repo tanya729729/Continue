@@ -1,9 +1,8 @@
 from app.models import Task
-from app.storage import MemoryStorage
+from app.storage import MemoryStorage,JsonStorage
 import pytest
 from app.errors import TaskNotFoundError
 from app.services import PlannerService
-
 
 #проверка,что задача "прочитать главу" еще не выполнена
 def test_task_normalizes_my_title():
@@ -149,7 +148,7 @@ def test_delete_keeps_other_id():
 #проверка, что при возникновении исключений состояние сервиса не изменяется.
 def test_errors_do_not_change_state():
     service = PlannerService(MemoryStorage())
-    created = service.add_task("A")
+    created = service.add_task("A",1)
     with pytest.raises(TaskNotFoundError):
         #попытка получить задачу с несуществующим id = 999; должна вызвать TaskNotFoundError
         service.get_task(999)
@@ -158,12 +157,14 @@ def test_errors_do_not_change_state():
     #после обработанных ошибок проверяется, что список задач сервиса остаётся неизменным
     assert service.list_tasks() == [created]
 
-
+# создает хранилище в памяти для теста.
+#создаёт MemoryStorage и передаёт его тестам, которым нужно хранилище.
+#По умолчанию каждый тест получает отдельный экземпляр, что помогает сохранять независимость тестов.
 @pytest.fixture
-def memory_storage():
-    return MemoryStorage()
+def memory_storage(): #объявляет функцию фикстурой
+    return MemoryStorage() #возвращает новый экземпляр хранилища
 
-#функция‑фикстура
+#функция‑фикстура для для подготовки тестового окружения 
 @pytest.fixture
 def service(memory_storage):
     return PlannerService(memory_storage)
@@ -176,15 +177,14 @@ def test_add_task(service, memory_storage):
     assert [task.title for task in memory_storage.load()] == ["Python"]
 
 
-
-@pytest.mark.parametrize("priority", [1, 5])
+#проверяет, что Task принимает граничные значения приоритета.
+@pytest.mark.parametrize("priority", [1, 5])  #запускает тест дважды: для 1 и 5.
 def test_task_accepts_priority_boundaries(priority):
     task = Task(1, "Python", priority=priority)
+    assert task.priority == priority #проверяет, что созданная задача сохранила переданное значение.
 
-    assert task.priority == priority
 
-
-@pytest.mark.parametrize("priority", [0, 6])
+@pytest.mark.parametrize("priority", [0, 6])#запускает тест отдельно для значений 0 и 6.
 def test_task_rejects_priority_outside_range(priority):
     with pytest.raises(ValueError):
         Task(1, "Python", priority=priority)
@@ -192,56 +192,52 @@ def test_task_rejects_priority_outside_range(priority):
 
 @pytest.mark.parametrize("title", ["", "   "])
 def test_task_rejects_blank_title(title):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):# проверяет, что создание Task вызывает ValueError; если исключения нет, тест не проходит.
         Task(1, title)
 
 
 @pytest.mark.parametrize(
-    ("query", "expected_titles"),
-    [("PYTHON", ["Python"]), ("ReAdMe", ["README"])],
+    ("query", "expected_titles"),#имена параметров: поисковый запрос и ожидаемые названия задач.
+    [("PYTHON", ["Python"]), ("ReAdMe", ["README"])], #две пары входных и ожидаемых значений.
 )
+#проверяет поиск без учёта регистра
 def test_search_is_case_insensitive(service, query, expected_titles):
     service.add_task("Python")
     service.add_task("README")
+    found = service.search_tasks(query) #выполняет поиск по текущему запросу.
+    assert [task.title for task in found] == expected_titles #сравнивает список названий найденных задач с expected_titles; при несовпадении тест не проходит.
 
-    found = service.search_tasks(query)
-
-    assert [task.title for task in found] == expected_titles
-
-
-
+#проверяет состояние после ошибки поиска несуществующей задачи
 def test_unknown_task_does_not_change_state(service):
     service.add_task("Python")
     before = [task.title for task in service.list_tasks()]
 
-    with pytest.raises(TaskNotFoundError):
+    with pytest.raises(TaskNotFoundError): #проверяет, что вызов service.get_task(99) выбрасывает TaskNotFoundError.
         service.get_task(99)
 
-    assert [task.title for task in service.list_tasks()] == before
+    assert [task.title for task in service.list_tasks()] == before #сравнивает текущий список названий с сохранённым.
 
-
+# проверяет, что завершение одной задачи не меняет статус другой.
 def test_mark_done_changes_only_the_selected_task(service):
     first = service.add_task("Python")
     second = service.add_task("Tests")
 
-    service.mark_done(first.id)
+    service.mark_done(first.id)  #отмечает первую задачу выполненной
 
     assert service.get_task(first.id).is_done is True
     assert service.get_task(second.id).is_done is False
 
-
+#проверяет независимость списков тегов у разных задач
 def test_task_tags_are_independent():
     first = Task(1, "Python")
     second = Task(2, "Tests")
-    first.tags.append("pytest")
+    first.tags.append("pytest")#добавляет тег в список первой задачи
 
     assert first.tags == ["pytest"]
-    assert second.tags == []
-
-from app.services import PlannerService
-from app.storage import JsonStorage
+    assert second.tags == [] #проверяет, что список второй задачи остался пустым.
 
 
+#проверяет сохранение и восстановление задач через JSON-хранилище.
 def test_round_trip_restores_tasks(tmp_path):
     path = tmp_path / "tasks.json"
     first = PlannerService(JsonStorage(path))
@@ -263,9 +259,9 @@ def test_round_trip_restores_tasks(tmp_path):
     assert restored_other.title == "Проверить схему"
     assert restored_other.is_done is False
 
-    assert [task.id for task in second.list_tasks()] == [created.id, other.id]
-    assert [task.id for task in second.search_tasks("УЧЁБА")] == [created.id]
-    assert second.get_statistics() == {"all": 2, "open": 1, "done": 1}
+    assert [task.id for task in second.list_tasks()] == [created.id, other.id]# проверяет порядок идентификаторов восстановленных задач.
+    assert [task.id for task in second.search_tasks("УЧЁБА")] == [created.id] #проверяет поиск восстановленной задачи
+    assert second.get_statistics() == {"all": 2, "open": 1, "done": 1}#две задачи, одна открытая и одна выполнен
 
     later = second.add_task("После восстановления", priority=1)
-    assert later.id == max(created.id, other.id) + 1
+    assert later.id == max(created.id, other.id) + 1 #проверяет, что  идентификатор новой задачи на единицу больше максимального среди прежних.

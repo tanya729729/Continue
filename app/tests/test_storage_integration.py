@@ -21,15 +21,16 @@ with TemporaryDirectory() as folder:
 
 
 
-
+#проверяет загрузку отсутствующего файла
 def test_missing_file_starts_empty(tmp_path):
-    path = tmp_path / "tasks.json"
+    path = tmp_path / "tasks.json" #формирует путь к файлу.
     assert not path.exists()
 
+    #создаёт хранилище и загружает задачи
     tasks = JsonStorage(path).load()
-
+    #проверяет, что результат — пустой список
     assert tasks == []
-    assert not path.exists()
+    assert not path.exists() #проверяет, что загрузка не создала файл.
 
 
 
@@ -67,22 +68,24 @@ def test_legacy_record_without_id_is_invalid(tmp_path):
     '[{"id": 3, "title": "Первая", "priority": 2, "is_done": false}, {"id": 3, "title": "Вторая", "priority": 1, "is_done": true}]',
     '{"id": 3, "title": "Не список", "priority": 2, "is_done": false}',
 ])
+
+#проверяет, что при ошибке загрузки файл не изменяется
 def test_invalid_json_is_not_replaced(tmp_path, content):
     path = tmp_path / "tasks.json"
     path.write_text(content, encoding="utf-8")
     before = path.read_bytes()
 
     with pytest.raises(StorageError):
-        JsonStorage(path).load()
+        JsonStorage(path).load() #проверяет, что load() выбрасывает StorageError.
 
-    assert path.read_bytes() == before
+    assert path.read_bytes() == before 
 
 
 def test_directory_cannot_be_read_as_file(tmp_path):
     path = tmp_path / "tasks.json"
-    path.mkdir()
+    path.mkdir()#создаёт по этому пути каталог
 
     with pytest.raises(StorageError):
         JsonStorage(path).load()
 
-    assert path.is_dir()
+    assert path.is_dir() # проверяет, что после ошибки путь по-прежнему является каталогом.
