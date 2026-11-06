@@ -129,25 +129,13 @@ def build_service(storage=None):
 
 #точка входа в программу. Он определяет, что произойдёт при запуске main.py
 def main():
-    try:
-        # Загружаем ранее сохранённые задачи
-        tasks = load_tasks(TASKS_FILE)
-
-        # Запускаем меню приложения
-        run(tasks)
-
-        # Сохраняем изменения после выхода из меню
-        save_tasks(TASKS_FILE,tasks)
-
-    except StorageError as error:
-        print(f"Ошибка хранилища: {error}")
-
-""" def main():
     service = build_service()
+
     try:
         run(service)
     except StorageError as error:
-        print(f"Ошибка хранилища: {error}") """
+        print(f"Ошибка хранилища: {error}")
+
 
 
 if __name__ == "__main__":

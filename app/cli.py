@@ -1,5 +1,6 @@
 from app.operations import add_task, find_task, mark_task_done, search_tasks, handle_stats
 from app.validators import  normalize_title
+from app.errors import TaskNotFoundError
 
 def format_task(task):
     if task["is_done"] == True:
@@ -16,18 +17,16 @@ def show_tasks(tasks):
 
 
 #функция выводит пользователю список доступных команд
-def show_menu():
-    print()
-    print("StudyHub Planner")
-    print("add - добавить задачу")
-    print("list - показать задачи")
-    print("find - найти задачу по id")
-    print("done - отметить задачу выполненной")
-    print("search - искать по названию")
-    print("stats - показать статистику")
-    print("exit - завершить работу")
-
-
+def show_menu(write=print):
+    write("")
+    write("StudyHub Planner")
+    write("add - добавить задачу")
+    write("list - показать задачи")
+    write("find - найти задачу по id")
+    write("done - отметить задачу выполненной")
+    write("search - искать по названию")
+    write("stats - показать статистику")
+    write("exit - завершить работу")
 
 
 #функция позволяет пользоваться программой, пока пользователь не выберет exit
@@ -64,6 +63,99 @@ def show_menu():
 
     return tasks
  """
+
+
+# Показывает все задачи через сервис.
+def handle_list(service, read=input, write=print):
+    tasks = service.list_tasks()
+
+    if not tasks:
+        write("Список задач пока пуст.")
+        return
+
+    for task in tasks:
+        write(str(task))
+
+
+# Добавляет новую задачу.
+def handle_add(service, read=input, write=print):
+    title = read("Название задачи: ")
+    raw_priority = read("Приоритет от 1 до 5: ")
+
+    try:
+        priority = int(raw_priority)
+        task = service.add_task(title, priority)
+    except ValueError as error:
+        write(f"Ошибка: {error}")
+        return
+
+    write(str(task))
+
+
+# Ищет задачи по названию.
+def handle_search(service, read=input, write=print):
+    query = read("Введите название для поиска: ").strip()
+
+    found_tasks = service.search_tasks(query)
+
+    if not found_tasks:
+        write("Задачи не найдены")
+        return
+
+    for task in found_tasks:
+        write(str(task))
+
+
+# Находит задачу по ID.
+def handle_find(service, read=input, write=print):
+    raw_id = read("Номер задачи: ")
+
+    try:
+        task = service.get_task(int(raw_id))
+    except (ValueError, TaskNotFoundError) as error:
+        write(f"Ошибка: {error}")
+        return
+
+    write(str(task))
+
+
+# Отмечает задачу выполненной.
+def handle_done(service, read=input, write=print):
+    raw_id = read("Номер задачи: ")
+
+    try:
+        task = service.mark_done(int(raw_id))
+    except (ValueError, TaskNotFoundError) as error:
+        write(f"Ошибка: {error}")
+        return
+
+    write("Задача выполнена")
+
+
+# Показывает статистику задач.
+def handle_stats(service, read=input, write=print):
+    statistics = service.get_statistics()
+
+    total = statistics["all"]
+    completed = statistics["done"]
+    left = statistics["open"]
+
+    percent = round(completed / total * 100, 2) if total else 0
+
+    write(f"Всего: {total}")
+    write(f"Выполнено: {completed}")
+    write(f"Осталось: {left}")
+    write(f"Процент выполнения: {percent}%")
+
+COMMAND_HANDLERS = {
+    "add": handle_add,
+    "list": handle_list,
+    "find": handle_find,
+    "done": handle_done,
+    "search": handle_search,
+    "stats": handle_stats,
+}
+
 def execute_command(service, command, read=input, write=print):
     name = command.strip().lower()
     if name == "exit":
@@ -131,59 +223,8 @@ def read_task_id():
         print("Номер должен быть положительным")
 
 
-#получает список tasks 
-# сразу передаёт его функции show_tasks, которая должна вывести задачи
-def handle_list(tasks):
-    show_tasks(tasks)
 
-# функция отвечает только за оркестрацию, а все детали валидации и формирования задачи вынесены в отдельные функции
-def handle_add(tasks):
-    title = read_title()
-    priority = read_priority()
-    try:
-        task = add_task(tasks, title, priority)
-    except ValueError as error:
-        print(error)
-    else:
-        print(format_task(task))
-
-def handle_search(tasks):
-    query = input("Введите название для поиска: ").strip()
-
-    found_tasks = search_tasks(tasks, query)# ищет задачи в tasks по запросу query.
-
-    if not found_tasks:
-        print("Задачи не найдены")
-        return
-
-    show_tasks(found_tasks)        
-
-
-def handle_find(tasks):
-    task_id = read_task_id()
-    task = find_task(tasks, task_id)
-    if task is None:
-        print('Задача не найдена')
-    else:
-        print(format_task(task))
-
-
-#функция помечает задачу как выполненную
-def handle_done(tasks):
-    task_id = read_task_id()
-    was_found = mark_task_done(tasks, task_id)
-    if was_found:
-        print("Задача выполнена")
-    else:
-        print("Задача не найдена")
-
-answers = ["Купить хлеб", "2"]  
-messages = []
 
 def fake_read(prompt): #функция принимает prompt и возвращает первый элемент answers, одновременно удаляя его из списка
     return answers.pop(0) #Если answers пуст, pop(0) вызовет IndexError.
-
-continued = execute_command(
-    service, "add", read=fake_read, write=messages.append
-)
 
