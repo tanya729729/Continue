@@ -4,17 +4,12 @@ from fastapi import HTTPException, Path, Request,Query,FastAPI,status
 from app.errors import TaskNotFoundError
 from app.schemas import TaskCreate, TaskRead
 from fastapi import Response
-
-
-
+from app.routers.tasks import router as tasks_router
 
 app = FastAPI(title="StudyHub Planner")
 app.state.planner = build_service()
+app.include_router(tasks_router)
 
-
-@app.get("/health")
-def health_check():
-    return {"status": "ok"}
 
 def _task_read_data(task):
     return {
@@ -24,6 +19,11 @@ def _task_read_data(task):
         "is_done": task.is_done,
     }
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
+
 @app.get("/stats")
 def read_stats(request: Request):
     statistics = request.app.state.planner.get_statistics()
@@ -32,7 +32,6 @@ def read_stats(request: Request):
         "open": statistics["open"],
         "done": statistics["done"],
     }
-
 
 
 @app.get("/tasks", response_model=list[TaskRead])
@@ -135,3 +134,5 @@ def delete_task(request: Request, task_id: Annotated[int, Path(gt=0)]) -> Respon
         task_id,
     )
     return Response(status_code=204)
+
+
