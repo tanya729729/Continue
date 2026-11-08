@@ -83,7 +83,20 @@ def save_tasks(path, tasks):
                 pass # игнорирует ошибку очистки, чтобы не скрыть основную ошибку.
 
        
-
+def replace_task(self, task_id, *, title, priority, is_done):
+    tasks = self.storage.load()
+    current = self._find_task(tasks, task_id)
+    index = tasks.index(current)
+    updated = Task(
+        id=current.id,
+        title=title,
+        priority=priority,
+        is_done=is_done,
+        tags=current.tags.copy(),
+    )
+    tasks[index] = updated
+    self.storage.save(tasks)
+    return updated
 
 # сохраняет задачи в JSON-файле и восстанавливает их как объекты Task
 class JsonStorage:
