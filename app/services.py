@@ -70,3 +70,23 @@ class PlannerService:
             print(f"Ошибка: {error}")
             return # прекращает выполнение после ошибки
         print("Задача удалена")
+
+
+    def patch_task(self, task_id, *, title=None, priority=None, is_done=None):
+        tasks = self.storage.load()
+        current = self._find_task(tasks, task_id)
+
+        if title is None and priority is None and is_done is None:
+            return current
+
+        index = tasks.index(current)
+        updated = Task(
+            id=current.id,
+            title=current.title if title is None else title,
+            priority=current.priority if priority is None else priority,
+            is_done=current.is_done if is_done is None else is_done,
+            tags=current.tags.copy(),
+        )
+        tasks[index] = updated
+        self.storage.save(tasks)
+        return updated

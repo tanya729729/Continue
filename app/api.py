@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import HTTPException, Path, Request,Query,FastAPI,status
 from app.errors import TaskNotFoundError
 from app.schemas import TaskCreate, TaskRead
+from fastapi import Response
 
 
 
@@ -93,8 +94,6 @@ def create_task(payload: TaskCreate):
         "is_done": task.is_done,
     }
 
-
-
 @app.put("/tasks/{task_id}", response_model=TaskRead)
 def update_task(
     task_id: Annotated[int, Path(gt=0)],
@@ -108,3 +107,31 @@ def update_task(
         priority=payload.priority,
         is_done=payload.is_done,
     )
+
+
+@app.patch("/tasks/{task_id}", response_model=TaskRead)
+def patch_task_endpoint(
+    request: Request,
+    task_id: Annotated[int, Path(gt=0)],
+    payload: TaskPatch,
+):
+    changes = payload.model_dump(
+        exclude_unset=True,
+        exclude_none=True,
+    )
+    task = _call_with_task_not_found_as_404(
+        request.app.state.planner.patch_task,
+        task_id,
+        **changes,
+    )
+    return _task_read_data(task)
+
+
+
+@app.delete("/tasks/{task_id}", status_code=204)
+def delete_task(request: Request, task_id: Annotated[int, Path(gt=0)]) -> Response:
+    _call_with_task_not_found_as_404(
+        request.app.state.planner.delete_task,
+        task_id,
+    )
+    return Response(status_code=204)

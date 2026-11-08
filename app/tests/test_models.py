@@ -4,6 +4,8 @@ import pytest
 from app.errors import TaskNotFoundError
 from app.services import PlannerService
 
+
+
 #проверка,что задача "прочитать главу" еще не выполнена
 def test_task_normalizes_my_title():
     task = Task(1, "  Прочитать главу  ", priority=3)
@@ -156,6 +158,111 @@ def test_errors_do_not_change_state():
         service.get_task(0)
     #после обработанных ошибок проверяется, что список задач сервиса остаётся неизменным
     assert service.list_tasks() == [created]
+
+
+
+
+def test_patch_task_keeps_other_fields_and_neighbor(tmp_path):
+    storage = JsonStorage(tmp_path / "tasks.json")
+    first = Task(id=4, title="Проверить API", priority=2, tags=["api"])
+    original = Task(
+        id=11,
+        title="Прочитать JSON",
+        priority=3,
+        is_done=True,
+        tags=["storage", "review"],
+    )
+    storage.save([first, original])
+    service = PlannerService(storage)
+
+    renamed = service.patch_task(11, title="Проверить сохранение")
+    assert renamed == Task(
+        id=11,
+        title="Проверить сохранение",
+        priority=3,
+        is_done=True,
+        tags=["storage", "review"],
+    )
+
+    reopened = service.patch_task(11, is_done=False)
+    assert reopened == Task(
+        id=11,
+        title="Проверить сохранение",
+        priority=3,
+        is_done=False,
+        tags=["storage", "review"],
+    )
+    assert service.storage.load() == [first, reopened]
+
+
+def test_patch_task_noop_missing_and_invalid_leave_storage_unchanged(tmp_path):
+    path = tmp_path / "tasks.json"
+    storage = JsonStorage(path)
+    original = [
+        Task(id=4, title="Проверить API", priority=2, tags=["api"]),
+        Task(
+            id=11,
+            title="Прочитать JSON",
+            priority=3,
+            is_done=True,
+            tags=["storage", "review"],
+        ),
+    ]
+    storage.save(original)
+    service = PlannerService(storage)
+
+    assert service.patch_task(11) == original[1]
+    assert PlannerService(JsonStorage(path)).storage.load() == original
+
+    with pytest.raises(TaskNotFoundError):
+        service.patch_task(99)
+    assert PlannerService(JsonStorage(path)).storage.load() == original
+
+    with pytest.raises(ValueError):
+        service.patch_task(11, priority=6)
+    assert PlannerService(JsonStorage(path)).storage.load() == original
+
+
+def test_patch_task_persists_for_new_service(tmp_path):
+    path = tmp_path / "tasks.json"
+    storage = JsonStorage(path)
+    original = [
+        Task(id=4, title="Проверить API", priority=2, tags=["api"]),
+        Task(
+            id=11,
+            title="Прочитать JSON",
+            priority=3,
+            is_done=True,
+            tags=["storage", "review"],
+        ),
+    ]
+    storage.save(original)
+
+    updated = PlannerService(storage).patch_task(
+        11,
+        title="Проверить сохранение",
+    )
+    assert updated == Task(
+        id=11,
+        title="Проверить сохранение",
+        priority=3,
+        is_done=True,
+        tags=["storage", "review"],
+    )
+
+    reloaded = PlannerService(JsonStorage(path)).storage.load()
+    assert reloaded == [
+        original[0],
+        Task(
+            id=11,
+            title="Проверить сохранение",
+            priority=3,
+            is_done=True,
+            tags=["storage", "review"],
+        ),
+    ]
+
+
 
 # создает хранилище в памяти для теста.
 #создаёт MemoryStorage и передаёт его тестам, которым нужно хранилище.
