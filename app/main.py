@@ -1,12 +1,50 @@
 #from reports.report import make_report
 from app.cli import run, format_task
-from app.storage import encode_tasks, decode_tasks
+from app.models import Task
+from pathlib import Path
+from app.storage import load_tasks, save_tasks
+from app.errors import StorageError
+from app.services import PlannerService
+from app.storage import JsonStorage
+from app.core.config import get_json_path
+
+
+# Путь к файлу с задачами
+TASKS_FILE = Path(__file__).resolve().parent / "tasks.json"
+
+
+
+def expect_value_error(make_task):
+    try:#начинает блок, в котором ожидается ошибка.
+        make_task() 
+    except ValueError: # перехватывает ValueError, если он возник при вызове.
+        return #завершает проверку: ожидаемая ошибка получена, None — результат по умолчанию 
+    raise AssertionError("конструктор принял некорректные данные") # вызывает AssertionError, если make_task() завершился без ошибки.
+
+#lambda — конструкция для создания функции без имени.
+#В этом списке каждая функция принимает ноль аргументов и при вызове создаёт Task с указанными значениями.
+invalid_calls = [
+    lambda: Task(True, "Проверить id"),
+    lambda: Task("2", "Проверить id"),
+    lambda: Task(0, "Проверить диапазон"),
+    lambda: Task(2, "Проверить priority", True),
+    lambda: Task(3, "Проверить priority", False),
+    lambda: Task(3, "Проверить диапазон", 0),
+    lambda: Task(3, "Проверить диапазон", 6),
+    lambda: Task(3, "Проверить тип", "3"),
+    lambda: Task(4, ""),
+    lambda: Task(4, "   "),
+    lambda: Task(5, "Проверить статус", 2, "False"),
+]
+
+for make_task in invalid_calls:
+    expect_value_error(make_task)
 
 
 def calculate_study_minutes(durations):
     total=0
-    for duration in durations:
-        total=total+duration
+    for duration in durations: # перебирает длительности по одной
+        total=total+duration #добавляет текущую длительность к сумме.
     return total
 
 def change_level(level):
@@ -81,13 +119,30 @@ def counted_format_task(task):
 def make_notifier(channel):
     def notify(items):
         print(channel, items)
-    return notify
+    return notify #return notify возвращает саму функцию, не вызывая её,
+#Это замыкание: возвращённая функция сохраняет доступ к channel после завершения make_notifier.
 
-#точка входа в твою программу. Он определяет, что произойдёт при запуске main.py
+
+#DATA_PATH = Path('data') / 'tasks.json'
+
+#функция создаёт сервис PlannerService с переданным хранилищем.
+def build_service(storage=None, settings=None):
+    if storage is not None:
+        return PlannerService(storage)
+    if settings is None:
+        settings = load_settings()
+    return PlannerService(JsonStorage(settings.json_path))
+
+
+
+#точка входа в программу. Он определяет, что произойдёт при запуске main.py
 def main():
-    tasks = []
-    run(tasks)
+    settings = load_settings()
+    try:
+        return run(build_service(settings=settings))
 
+    except StorageError as error:
+        print(f"Planner остановлен: {error}")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

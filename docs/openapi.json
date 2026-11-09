@@ -1,0 +1,6 @@
+"paths": {
+  "/health": {
+    "get": {}
+    "post":{}
+  }
+}
