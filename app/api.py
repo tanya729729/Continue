@@ -1,15 +1,18 @@
+from app.core.config import load_settings
 from app.main import build_service
 from typing import Annotated
 from fastapi import HTTPException, Path, Request,Query,FastAPI,status
 from app.errors import TaskNotFoundError
-from app.schemas import TaskCreate, TaskRead
+from app.routers.tasks.schemas import TaskCreate, TaskRead
 from fastapi import Response
 from app.routers.tasks import router as tasks_router
+from app.routers.tasks.router import router as tasks_router
 
-app = FastAPI(title="StudyHub Planner")
-app.state.planner = build_service()
+settings = load_settings()
+app = FastAPI(title=settings.app_name)
+app.state.settings = settings
+app.state.planner = build_service(settings=settings)
 app.include_router(tasks_router)
-
 
 def _task_read_data(task):
     return {

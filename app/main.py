@@ -6,9 +6,13 @@ from app.storage import load_tasks, save_tasks
 from app.errors import StorageError
 from app.services import PlannerService
 from app.storage import JsonStorage
+from app.core.config import get_json_path
+
 
 # Путь к файлу с задачами
 TASKS_FILE = Path(__file__).resolve().parent / "tasks.json"
+
+
 
 def expect_value_error(make_task):
     try:#начинает блок, в котором ожидается ошибка.
@@ -119,24 +123,26 @@ def make_notifier(channel):
 #Это замыкание: возвращённая функция сохраняет доступ к channel после завершения make_notifier.
 
 
-DATA_PATH = Path('data') / 'tasks.json'
+#DATA_PATH = Path('data') / 'tasks.json'
 
 #функция создаёт сервис PlannerService с переданным хранилищем.
-def build_service(storage=None):
-    if storage is None:
-        storage = JsonStorage(DATA_PATH) #создаётся JsonStorage с путём DATA_PATH.
-    return PlannerService(storage)
+def build_service(storage=None, settings=None):
+    if storage is not None:
+        return PlannerService(storage)
+    if settings is None:
+        settings = load_settings()
+    return PlannerService(JsonStorage(settings.json_path))
+
+
 
 #точка входа в программу. Он определяет, что произойдёт при запуске main.py
 def main():
-    service = build_service()
-
+    settings = load_settings()
     try:
-        run(service)
+        return run(build_service(settings=settings))
+
     except StorageError as error:
-        print(f"Ошибка хранилища: {error}")
-
-
+        print(f"Planner остановлен: {error}")
 
 if __name__ == "__main__":
     main()
